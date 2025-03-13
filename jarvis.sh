@@ -588,7 +588,8 @@ case "$1" in
             ln -sf "$OLLAMA_INSTALL_DIR/ollama" "$BINDIR/ollama"
         fi
         
-        export PATH=\"\$PATH:$BINDIR\"
+        echo 'export PATH="$PATH:$HOME/Descargas/ollama/bin"' >> ~/.bashrc
+        source ~/.bashrc
         ;;
 
     "bye")
