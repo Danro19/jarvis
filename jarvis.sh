@@ -565,34 +565,73 @@ case "$1" in
     	sql
      	;;
     "resolutio")
-        OLLAMA_INSTALL_DIR="$HOME/Descargas/ollama"
-        BINDIR="$OLLAMA_INSTALL_DIR/bin"
-        
-        # Create installation directories
-        mkdir -p "$OLLAMA_INSTALL_DIR/lib/ollama"
-        mkdir -p "$BINDIR"
+    OLLAMA_INSTALL_DIR="$HOME/Descargas/ollama"
+    BINDIR="$OLLAMA_INSTALL_DIR/bin"
+    
+    # Create installation directories
+    mkdir -p "$OLLAMA_INSTALL_DIR/lib/ollama"
+    mkdir -p "$BINDIR"
 
-        if [ -d "$OLLAMA_INSTALL_DIR/lib/ollama" ] ; then
-            status "Cleaning up old version at $OLLAMA_INSTALL_DIR/lib/ollama"
-            rm -rf "$OLLAMA_INSTALL_DIR/lib/ollama"
-        fi
+    if [ -d "$OLLAMA_INSTALL_DIR/lib/ollama" ] ; then
+        status "Cleaning up old version at $OLLAMA_INSTALL_DIR/lib/ollama"
+        rm -rf "$OLLAMA_INSTALL_DIR/lib/ollama"
+    fi
 
-        status "Installing ollama to $OLLAMA_INSTALL_DIR"
-        status "Downloading Linux ${ARCH} bundle"
-        curl --fail --show-error --location --progress-bar \
-        "https://ollama.com/download/ollama-linux-${ARCH}.tgz${VER_PARAM}" | \
-        tar -xzf - -C "$OLLAMA_INSTALL_DIR"
+    status "Installing ollama to $OLLAMA_INSTALL_DIR"
+    status "Downloading Linux ${ARCH} bundle"
+    curl --fail --show-error --location --progress-bar \
+    "https://ollama.com/download/ollama-linux-${ARCH}.tgz${VER_PARAM}" | \
+    tar -xzf - -C "$OLLAMA_INSTALL_DIR"
 
-        if [ "$OLLAMA_INSTALL_DIR/bin/ollama" != "$BINDIR/ollama" ] ; then
-            status "Making ollama accessible in $BINDIR"
-            ln -sf "$OLLAMA_INSTALL_DIR/ollama" "$BINDIR/ollama"
-        fi
-        
-        echo 'export PATH="$PATH:$HOME/Descargas/ollama/bin"' >> ~/.bashrc
-        source ~/.bashrc
-        ;;
+    if [ "$OLLAMA_INSTALL_DIR/bin/ollama" != "$BINDIR/ollama" ] ; then
+        status "Making ollama accessible in $BINDIR"
+        ln -sf "$OLLAMA_INSTALL_DIR/ollama" "$BINDIR/ollama"
+    fi
+    
+    # Add to PATH and update current session
+    echo 'export PATH="$PATH:$HOME/Descargas/ollama/bin"' >> ~/.bashrc
+    export PATH="$PATH:$HOME/Descargas/ollama/bin"
+
+    # Start ollama serve in background using nohup and save its PID
+    status "Starting ollama server in background..."
+    nohup ollama serve > /dev/null 2>&1 &
+    OLLAMA_PID=$!
+    disown $OLLAMA_PID
+    
+    # Store PID for later use
+    echo $OLLAMA_PID > "$OLLAMA_INSTALL_DIR/ollama.pid"
+    
+    # Wait a few seconds for the server to start
+    sleep 5
+    
+    # Run llama2 model
+    status "Running llama2 model..."
+    ollama run llama2
+    ;;
 
     "bye")
+        
+        # Path to the PID file
+        OLLAMA_PID_FILE="$HOME/Descargas/ollama/ollama.pid"
+
+        # Check if PID file exists
+        if [ -f "$OLLAMA_PID_FILE" ]; then
+            OLLAMA_PID=$(cat "$OLLAMA_PID_FILE")
+
+            # Check if the process is still running
+            if ps -p $OLLAMA_PID > /dev/null; then
+                status "Stopping ollama server..."
+                kill $OLLAMA_PID
+                rm "$OLLAMA_PID_FILE"
+                status "Ollama server stopped successfully"
+            else
+                status "Ollama server is not running"
+                rm "$OLLAMA_PID_FILE"
+            fi
+        else
+            status "No ollama server PID file found"
+        fi
+        
         cleanup_ssh 
         cleanup_discord
         cleanup_vscode
