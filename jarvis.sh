@@ -33,7 +33,6 @@ FONT="Liberation Mono 12"
 FOREGROUND_COLOR="rgb(255,255,255)"
 
 
-
 # Function to prompt the user for missing variables
 check_variables() {
     if [ -z "$GITHUB_EMAIL" ]; then
@@ -564,7 +563,7 @@ case "$1" in
     "sql")
     	sql
      	;;
-    "resolutio")
+"resolutio")
     OLLAMA_INSTALL_DIR="$HOME/Descargas/ollama"
     BINDIR="$OLLAMA_INSTALL_DIR/bin"
     
@@ -592,7 +591,6 @@ case "$1" in
     echo 'export PATH="$PATH:$HOME/Descargas/ollama/bin"' >> ~/.bashrc
     export PATH="$PATH:$HOME/Descargas/ollama/bin"
 
-    # Start ollama serve in background using nohup and save its PID
     status "Starting ollama server in background..."
     nohup ollama serve > /dev/null 2>&1 &
     OLLAMA_PID=$!
@@ -601,7 +599,8 @@ case "$1" in
     # Store PID for later use
     echo $OLLAMA_PID > "$OLLAMA_INSTALL_DIR/ollama.pid"
     
-    # Wait a few seconds for the server to start
+    # Additional small wait to ensure server is up
+    status "Waiting for server to start..."
     sleep 5
     
     # Run llama2 model
